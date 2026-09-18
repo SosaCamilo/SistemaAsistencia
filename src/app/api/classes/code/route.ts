@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 import { nowInSchoolTZ, classDayForDateStr } from "@/lib/schedule";
 import { logAudit } from "@/lib/audit";
+import { formatDateDMY } from "@/lib/dateFormat";
 
 export async function GET(req: Request) {
   const { session, error } = await requireSession(["PROFESOR", "ADMIN"]);
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
   await logAudit({
     actorId: session!.user.id,
     action: "CLASS_CODE_GENERATED",
-    details: `Fecha: ${date}, Código: ${code}`,
+    details: `Fecha: ${formatDateDMY(date)}, Código: ${code}`,
   });
 
   return NextResponse.json({

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 import { logAudit } from "@/lib/audit";
 import { HOUR_CONCEPT_CATEGORIES, HourConceptCategory } from "@/lib/hours";
+import { normalizeDateInput } from "@/lib/dateFormat";
 
 const VALID_CATEGORIES = new Set<string>(HOUR_CONCEPT_CATEGORIES.map((c) => c.value));
 
@@ -69,9 +70,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     );
   }
 
-  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  const normalizedDate = date ? normalizeDateInput(date) : null;
+  if (date && !normalizedDate) {
     return NextResponse.json(
-      { error: "La fecha debe tener formato YYYY-MM-DD." },
+      { error: "La fecha debe tener formato DD-MM-AAAA o YYYY-MM-DD." },
       { status: 400 }
     );
   }
@@ -83,7 +85,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       title,
       institution,
       hours,
-      date,
+      date: normalizedDate,
       note,
       createdById: session!.user.id,
     },

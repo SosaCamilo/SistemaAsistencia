@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 import { logAudit } from "@/lib/audit";
-import { formatDateDMY } from "@/lib/dateFormat";
+import { formatDateDMY, normalizeDateInput } from "@/lib/dateFormat";
 import { calculateInternshipHours } from "@/lib/hours";
 
 export async function POST(
@@ -31,9 +31,10 @@ export async function POST(
   const reason = String(body?.reason ?? "").trim();
   const note = body?.note ? String(body.note).trim() : null;
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  const normalizedDate = normalizeDateInput(date);
+  if (!normalizedDate) {
     return NextResponse.json(
-      { error: "La fecha debe tener formato YYYY-MM-DD." },
+      { error: "La fecha debe tener formato DD-MM-AAAA o YYYY-MM-DD." },
       { status: 400 }
     );
   }
@@ -45,10 +46,10 @@ export async function POST(
     );
   }
 
-  if (date < internship.startDate || (internship.endDate && date > internship.endDate)) {
+  if (normalizedDate < internship.startDate || (internship.endDate && normalizedDate > internship.endDate)) {
     return NextResponse.json(
       {
-        error: `La fecha ${formatDateDMY(date)} está fuera del período de la pasantía (${formatDateDMY(internship.startDate)} a ${internship.endDate ? formatDateDMY(internship.endDate) : "actualidad"}).`,
+        error: `La fecha ${formatDateDMY(normalizedDate)} está fuera del período de la pasantía (${formatDateDMY(internship.startDate)} a ${internship.endDate ? formatDateDMY(internship.endDate) : "actualidad"}).`,
       },
       { status: 400 }
     );
@@ -59,14 +60,14 @@ export async function POST(
     where: {
       internshipId_date: {
         internshipId: params.internshipId,
-        date,
+        date: normalizedDate,
       },
     },
   });
 
   if (existing) {
     return NextResponse.json(
-      { error: `Ya existe una excepción registrada para el día ${date}.` },
+      { error: `Ya existe una excepción registrada para el día ${formatDateDMY(normalizedDate)}.` },
       { status: 409 }
     );
   }
@@ -74,7 +75,7 @@ export async function POST(
   const exception = await prisma.internshipException.create({
     data: {
       internshipId: params.internshipId,
-      date,
+      date: normalizedDate,
       reason,
       note,
     },
@@ -84,7 +85,7 @@ export async function POST(
     actorId: session!.user.id,
     action: "INTERNSHIP_EXCEPTION_CREATED",
     targetId: params.id,
-    details: `${date} (${reason}) - Pasantía ${internship.company} de ${internship.student.apellido}, ${internship.student.nombre}`,
+    details: `${formatDateDMY(normalizedDate)} (${reason}) - Pasantía ${internship.company} de ${internship.student.apellido}, ${internship.student.nombre}`,
   });
 
   const updatedInternship = await prisma.internship.findUnique({
@@ -154,7 +155,7 @@ export async function DELETE(
     actorId: session!.user.id,
     action: "INTERNSHIP_EXCEPTION_DELETED",
     targetId: params.id,
-    details: `${exception.date} (${exception.reason}) - Pasantía ${exception.internship.company}`,
+    details: `${formatDateDMY(exception.date)} (${exception.reason}) - Pasantía ${exception.internship.company}`,
   });
 
   const updatedInternship = await prisma.internship.findUnique({

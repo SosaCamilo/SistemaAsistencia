@@ -8,6 +8,7 @@ import {
   calculateInternshipHours,
 } from "@/lib/hours";
 import { logAudit } from "@/lib/audit";
+import { formatDateDMY } from "@/lib/dateFormat";
 
 // El alumno registra su propia asistencia del dia. Solo funciona si la
 // ventana de la clase de hoy esta abierta (ya comenzo y no termino) y
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
     actorId: session!.user.id,
     action: "ATTENDANCE_SELF_CREATE",
     targetId: session!.user.id,
-    details: `${status.dayOfWeek} ${status.date} (+${status.hours}hs)`,
+    details: `${status.dayOfWeek} ${formatDateDMY(status.date)} (+${status.hours}hs)`,
   });
 
   return NextResponse.json({ attendance });

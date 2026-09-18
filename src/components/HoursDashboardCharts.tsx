@@ -130,7 +130,7 @@ export default function HoursDashboardCharts({ breakdown, creditedCount }: Props
               <span className="text-xs font-semibold text-slate-500 ml-0.5">hs</span>
             </p>
             <p className="text-[11px] text-slate-500 mt-1">
-              Antes del 1 de septiembre
+              Antes del 01-09-2026
             </p>
           </div>
         </div>

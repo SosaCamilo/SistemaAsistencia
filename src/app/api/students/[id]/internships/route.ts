@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 import { logAudit } from "@/lib/audit";
 import { calculateInternshipHours } from "@/lib/hours";
+import { normalizeDateInput, formatDateDMY } from "@/lib/dateFormat";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const { session, error } = await requireSession();
@@ -63,26 +64,26 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "La empresa u organismo es obligatorio." }, { status: 400 });
   }
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+  const normalizedStart = normalizeDateInput(startDate);
+  if (!normalizedStart) {
     return NextResponse.json(
-      { error: "La fecha de inicio debe tener formato YYYY-MM-DD." },
+      { error: "La fecha de inicio debe tener formato DD-MM-AAAA o YYYY-MM-DD." },
       { status: 400 }
     );
   }
 
-  if (endDate) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
-      return NextResponse.json(
-        { error: "La fecha de fin debe tener formato YYYY-MM-DD." },
-        { status: 400 }
-      );
-    }
-    if (startDate > endDate) {
-      return NextResponse.json(
-        { error: "La fecha de inicio no puede ser posterior a la fecha de fin." },
-        { status: 400 }
-      );
-    }
+  const normalizedEnd = endDate ? normalizeDateInput(endDate) : null;
+  if (endDate && !normalizedEnd) {
+    return NextResponse.json(
+      { error: "La fecha de fin debe tener formato DD-MM-AAAA o YYYY-MM-DD." },
+      { status: 400 }
+    );
+  }
+  if (normalizedEnd && normalizedStart > normalizedEnd) {
+    return NextResponse.json(
+      { error: "La fecha de inicio no puede ser posterior a la fecha de fin." },
+      { status: 400 }
+    );
   }
 
   let scheduleObj: Record<string, number> = {};
@@ -137,8 +138,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       studentId: params.id,
       company,
       roleOrTask,
-      startDate,
-      endDate,
+      startDate: normalizedStart,
+      endDate: normalizedEnd,
       weeklySchedule: JSON.stringify(cleanedSchedule),
       note,
       createdById: session!.user.id,
@@ -155,7 +156,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     actorId: session!.user.id,
     action: "INTERNSHIP_CREATED",
     targetId: params.id,
-    details: `Pasantía ${company} (${startDate} a ${endDate}) para ${student.apellido}, ${student.nombre}`,
+    details: `Pasantía ${company} (${formatDateDMY(startDate)} a ${endDate ? formatDateDMY(endDate) : "actualidad"}) para ${student.apellido}, ${student.nombre}`,
   });
 
   return NextResponse.json(

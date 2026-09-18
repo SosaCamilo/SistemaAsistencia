@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 import { classDayForDateStr } from "@/lib/schedule";
 import { logAudit } from "@/lib/audit";
+import { formatDateDMY } from "@/lib/dateFormat";
 
 // Listado de clases anuladas. Lo consultan todos los roles: el alumno lo
 // necesita para saber por qué no puede registrar asistencia.
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
   await logAudit({
     actorId: session!.user.id,
     action: "CLASS_CANCELLED",
-    details: `${classDay.dayOfWeek} ${date}${reason ? ` - ${reason}` : ""} (${affected} asistencias afectadas)`,
+    details: `${classDay.dayOfWeek} ${formatDateDMY(date)}${reason ? ` - ${reason}` : ""} (${affected} asistencias afectadas)`,
   });
 
   return NextResponse.json({ cancelledClass, affected });
@@ -83,7 +84,7 @@ export async function DELETE(req: Request) {
   await logAudit({
     actorId: session!.user.id,
     action: "CLASS_REACTIVATED",
-    details: `${existing.dayOfWeek} ${existing.date}`,
+    details: `${existing.dayOfWeek} ${formatDateDMY(existing.date)}`,
   });
 
   return NextResponse.json({ ok: true });

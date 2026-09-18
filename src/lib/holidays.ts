@@ -8,7 +8,18 @@ const holidaysCache: Record<number, ArgentineHoliday[]> = {};
 
 /** Días escolares sin clase y fechas no laborables específicas de CABA */
 function getSchoolNonWorkingDays(year: number): ArgentineHoliday[] {
+  const winterRecess: ArgentineHoliday[] = [];
+  // Receso Invernal (20 de julio al 31 de julio)
+  for (let d = 20; d <= 31; d++) {
+    winterRecess.push({
+      date: `${year}-07-${String(d).padStart(2, "0")}`,
+      name: "Receso Invernal (Vacaciones de invierno)",
+      type: "receso_invernal",
+    });
+  }
+
   return [
+    ...winterRecess,
     {
       date: `${year}-09-11`,
       name: "Día del Maestro (Asueto escolar)",

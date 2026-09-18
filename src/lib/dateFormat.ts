@@ -77,3 +77,28 @@ export function formatDateTimeDMY(
   }
   return `${day}-${month}-${year} ${hours}:${minutes}`;
 }
+
+/**
+ * Normaliza una entrada de fecha (ya sea en formato DD-MM-AAAA o YYYY-MM-DD)
+ * al formato estándar de almacenamiento interno YYYY-MM-DD.
+ * Retorna null si el formato es inválido o no reconocible.
+ */
+export function normalizeDateInput(d?: string | null): string | null {
+  if (!d) return null;
+  const trimmed = d.trim();
+  if (!trimmed) return null;
+
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // DD-MM-AAAA o DD/MM/AAAA
+  const match = /^(\d{2})[-/](\d{2})[-/](\d{4})$/.exec(trimmed);
+  if (match) {
+    const [, day, month, year] = match;
+    return `${year}-${month}-${day}`;
+  }
+
+  return null;
+}

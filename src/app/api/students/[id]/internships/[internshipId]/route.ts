@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 import { logAudit } from "@/lib/audit";
 import { calculateInternshipHours } from "@/lib/hours";
+import { normalizeDateInput } from "@/lib/dateFormat";
 
 export async function DELETE(
   _req: Request,
@@ -86,17 +87,23 @@ export async function PATCH(
     dataToUpdate.roleOrTask = body.roleOrTask ? String(body.roleOrTask).trim() : null;
   }
 
-  if (typeof body?.startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.startDate.trim())) {
-    dataToUpdate.startDate = body.startDate.trim();
+  if (body?.startDate !== undefined) {
+    const norm = normalizeDateInput(body.startDate);
+    if (!norm) {
+      return NextResponse.json({ error: "La fecha de inicio debe tener formato DD-MM-AAAA o YYYY-MM-DD." }, { status: 400 });
+    }
+    dataToUpdate.startDate = norm;
   }
 
   if (body?.endDate !== undefined) {
     if (body.endDate === null || body.endDate === "") {
       dataToUpdate.endDate = null;
-    } else if (typeof body.endDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.endDate.trim())) {
-      dataToUpdate.endDate = body.endDate.trim();
     } else {
-      return NextResponse.json({ error: "La fecha de fin debe tener formato YYYY-MM-DD o estar vacía." }, { status: 400 });
+      const norm = normalizeDateInput(body.endDate);
+      if (!norm) {
+        return NextResponse.json({ error: "La fecha de fin debe tener formato DD-MM-AAAA o YYYY-MM-DD, o estar vacía." }, { status: 400 });
+      }
+      dataToUpdate.endDate = norm;
     }
   }
 

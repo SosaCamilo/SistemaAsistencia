@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/apiAuth";
 import { isPastOrCurrentClassDate, getAttendanceStatus, nowInSchoolTZ } from "@/lib/schedule";
 import { logAudit } from "@/lib/audit";
+import { formatDateDMY } from "@/lib/dateFormat";
 
 // Crea o corrige la asistencia de un alumno en una fecha de clase (pasada o adelantada).
 export async function POST(req: Request) {
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
     actorId: session!.user.id,
     action: existing ? "ATTENDANCE_ADMIN_UPDATE" : "ATTENDANCE_ADMIN_CREATE",
     targetId: studentId,
-    details: `${validation.dayOfWeek} ${date}: ${existing ? `${existing.hours}hs -> ` : ""}${hours}hs`,
+    details: `${validation.dayOfWeek} ${formatDateDMY(date)}: ${existing ? `${existing.hours}hs -> ` : ""}${hours}hs`,
   });
 
   return NextResponse.json({ attendance });
@@ -111,7 +112,7 @@ export async function DELETE(req: Request) {
     actorId: session!.user.id,
     action: "ATTENDANCE_ADMIN_DELETE",
     targetId: studentId,
-    details: `${existing.dayOfWeek} ${existing.date}: -${existing.hours}hs`,
+    details: `${existing.dayOfWeek} ${formatDateDMY(existing.date)}: -${existing.hours}hs`,
   });
 
   return NextResponse.json({ ok: true });
