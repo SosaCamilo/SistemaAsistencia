@@ -10,6 +10,7 @@ import {
   registerFailure,
   registerSuccess,
 } from "@/lib/loginRateLimit";
+import { syncClassHolidays } from "@/lib/holidaysSync";
 
 export const authOptions: AuthOptions = {
   session: { strategy: "jwt" },
@@ -66,6 +67,11 @@ export const authOptions: AuthOptions = {
         registerSuccess(dni);
         await logAudit({ actorId: user.id, action: "LOGIN" });
 
+        // Sincronización automática de feriados en segundo plano (con mutex y cooldown)
+        void syncClassHolidays(user.id).catch((err) => {
+          console.error("[auth] Error en sincronización automática de feriados al iniciar sesión:", err);
+        });
+
         return {
           id: user.id,
           dni: user.dni,
@@ -77,6 +83,13 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
+  events: {
+    async signIn({ user }) {
+      void syncClassHolidays(user.id).catch((err) => {
+        console.error("[auth] Error en evento signIn al sincronizar feriados:", err);
+      });
+    },
+  },
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {

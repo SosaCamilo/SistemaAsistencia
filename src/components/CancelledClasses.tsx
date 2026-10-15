@@ -109,7 +109,7 @@ export default function CancelledClasses({ onChange }: { onChange?: () => void }
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-500 max-w-xl">
           Si una clase no se dicta (feriado, paro, suspensión), anulala acá. Podés anular clases que
-          ya pasaron y también futuras. Las asistencias registradas dejan de acreditar horas, pero no se borran: si reactivás la clase, vuelven a contar.
+          ya pasaron y también futuras. Los feriados oficiales se sincronizan automáticamente al iniciar sesión, o podés forzar la sincronización con el botón. Las asistencias registradas dejan de acreditar horas, pero no se borran: si reactivás la clase, vuelven a contar.
         </p>
         <button
           type="button"

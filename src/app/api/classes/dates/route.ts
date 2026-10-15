@@ -34,5 +34,5 @@ export async function GET(req: Request) {
     cursor = addDays(cursor, -1);
   }
 
-  return NextResponse.json({ dates });
+  return NextResponse.json({ dates, today });
 }

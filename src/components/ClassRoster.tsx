@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import RefreshIndicator from "@/components/RefreshIndicator";
 import { useAutoRefresh } from "@/lib/useAutoRefresh";
-import { formatDateDMY } from "@/lib/dateFormat";
+import { formatDateDMY, getTodaySchoolTZ } from "@/lib/dateFormat";
 
 type RosterEntry = {
   id: string;
@@ -32,7 +32,7 @@ type Roster = {
   error?: string;
 };
 
-type ClassDate = { date: string; dayOfWeek: string };
+type ClassDate = { date: string; dayOfWeek: string; isFuture?: boolean };
 
 export default function ClassRoster({ canEdit = false }: { canEdit?: boolean }) {
   const { data: session } = useSession();
@@ -49,13 +49,27 @@ export default function ClassRoster({ canEdit = false }: { canEdit?: boolean }) 
   const canRemove = !isProf || !!data?.isOpen || !!data?.isFuture;
 
   useEffect(() => {
-    fetch("/api/classes/dates?limit=20")
+    fetch("/api/classes/dates?limit=50")
       .then((r) => r.json())
       .then((d) => {
-        setDates(d.dates ?? []);
-        // Arranca en la clase más reciente.
-        if (d.dates?.length) setSelected(d.dates[0].date);
-        else setLoading(false);
+        const list: ClassDate[] = d.dates ?? [];
+        setDates(list);
+        const today = d.today || getTodaySchoolTZ();
+        // Selecciona automáticamente la fecha actual en el combobox si está en la lista.
+        const todayClass = list.find((c) => c.date === today);
+        if (todayClass) {
+          setSelected(todayClass.date);
+        } else {
+          // Si hoy no es día de clase, arranca en la clase más reciente ya transcurrida (<= hoy), o la primera disponible.
+          const mostRecentPast = list.find((c) => c.date <= today);
+          if (mostRecentPast) {
+            setSelected(mostRecentPast.date);
+          } else if (list.length) {
+            setSelected(list[0].date);
+          } else {
+            setLoading(false);
+          }
+        }
       });
   }, []);
 
@@ -113,7 +127,12 @@ export default function ClassRoster({ canEdit = false }: { canEdit?: boolean }) 
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
           >
-            {dates.map((d: any) => (
+            {selected && !dates.some((d) => d.date === selected) && (
+              <option value={selected}>
+                {formatDateDMY(selected)} (Otra fecha)
+              </option>
+            )}
+            {dates.map((d) => (
               <option key={d.date} value={d.date}>
                 {d.dayOfWeek} {formatDateDMY(d.date)}{d.isFuture ? " (Adelantada / Próxima)" : ""}
               </option>

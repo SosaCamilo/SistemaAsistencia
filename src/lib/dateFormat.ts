@@ -102,3 +102,19 @@ export function normalizeDateInput(d?: string | null): string | null {
 
   return null;
 }
+
+/**
+ * Obtiene la fecha actual en formato YYYY-MM-DD en la zona horaria del colegio.
+ */
+export function getTodaySchoolTZ(): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
+}
